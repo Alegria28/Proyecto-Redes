@@ -1,0 +1,5 @@
+(^|\.)Facebook\.com$
+(^|\.)x\.com$
+(^|\.)Instagram\.com$
+(^|\.)tiktok\.com$
+(^|\.)YouTube\.com$
