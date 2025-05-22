@@ -14,3 +14,16 @@ services:
       - "3128:3128" # Formato PUERTO_HOST:CONTENEDOR_HOST
     # Siempre se reiniciara el contenedor si este se detiene
     restart: always
+  apache:
+    # Indicamos que se debe de construir la imagen para este servicio
+    build:
+      # El Dockerfile se encuentra en este directorio
+      context: ./apache
+      # Especificamos el nombre del archivo dentro del directorio (contexto)
+      dockerfile: Dockerfile
+    # Para que el puerto del contenedor (el que expusimos) sea accesible desde la maquina anfitriona, a esto se le llama "mapear un puerto",
+    # en este caso del host al puerto del contenedor, es como si fuera un puente entre estos 2 puertos
+    ports:
+      - "80:80" # Formato PUERTO_HOST:CONTENEDOR_HOST
+    # Siempre se reiniciara el contenedor si este se detiene
+    restart: always
