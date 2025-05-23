@@ -1,3 +1,6 @@
+#REVISAR ESTE APUNTE PARA HACER EL DOCKERFILE
+# https://www.youtube.com/watch?v=q_MCqyukJ34&t=667s
+#https://gestal.es/downloads/ies/DelegacionDeZonaDockerBind9.pdf
 FROM ubuntu:latest
 
 # Actualizamos el sistema
@@ -11,7 +14,11 @@ COPY config/db.local.pagina1.com /etc/bind/db.local.pagina1.com
 COPY config/db.local.pagina2.com /etc/bind/db.local.pagina2.com
 COPY config/db.local.pagina3.com /etc/bind/db.local.pagina3.com
 
-RUN chown -R bind:bind /etc/bind/
+
+RUN chown -R bind:bind /etc/bind/ 
+# Cambiamos los permisos de los archivos de configuración de BIND9 
+# para que el usuario 'bind' tenga acceso a ellos.
+# Esto es importante para la seguridad y el funcionamiento correcto del servicio.
 RUN chmod -R 755 /etc/bind/
 
 # Crea el directorio de caché de Bind9 y asigna los permisos correctos.
