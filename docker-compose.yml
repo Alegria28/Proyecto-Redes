@@ -1,7 +1,54 @@
 # Definimos los servicios que vamos a tener
 services:
   # Primer servicio
-  proxysquid:
+  bind:
+    # Indicamos que se debe de construir la imagen para este servicio
+    build:
+      # El Dockerfile se encuentra en este directorio
+      context: ./DNSbind
+      # Especificamos el nombre del archivo dentro del directorio (contexto)
+      dockerfile: Dockerfile
+    # Para que el puerto del contenedor (el que expusimos) sea accesible desde la maquina anfitriona, a esto se le llama "mapear un puerto",
+    # en este caso del host al puerto del contenedor, es como si fuera un puente entre estos 2 puertos
+    ports:
+      # Utilizamos 127.0.0.1 ya que es el "localhost" de la maquina anfitriona (para que este contenedor solo sea accesible desde esta)
+      # Formato PUERTO_HOST:PUERTO_CONTENEDOR para tcp y udp ya que este contenedor expone estos 2 puertos
+      - "127.0.0.1:53:53/tcp"
+      - "127.0.0.1:53:53/udp"
+    # Le asignamos una IP estática al contenedor dentro de la red llamada "proyecto" (declarada después)
+    networks:
+      proyecto:
+        ipv4_address: 192.168.0.2 # IP asignada al servidor BIND, por ende, la IP de nuestro DNS
+    # Siempre se reiniciara el contenedor si este se detiene
+    restart: always
+    
+  # Segundo servicio
+  apache:
+    # Indicamos que se debe de construir la imagen para este servicio
+    build:
+      # El Dockerfile se encuentra en este directorio
+      context: ./virtualHostApache
+      # Especificamos el nombre del archivo dentro del directorio (contexto) 
+      dockerfile: Dockerfile
+    # Para que el puerto del contenedor (el que expusimos) sea accesible desde la maquina anfitriona, a esto se le llama "mapear un puerto",
+    # en este caso del host al puerto del contenedor, es como si fuera un puente entre estos 2 puertos
+    ports:
+      - "80:80" # Formato PUERTO_HOST:CONTENEDOR_HOST
+    # Le asignamos una IP estática al contenedor dentro de la red llamada "proyecto" (declarada después)      
+    networks:
+      proyecto:
+        ipv4_address: 192.168.0.3 # IP asignada al servidor Apache
+    # Utilizamos el servidor BIND para nuestro DNS
+    dns:
+      - 192.168.0.2
+    # Definimos el orden de inicio para nuestros servicios, en donde BIND debe de estar iniciado antes de que apache pueda estarlo
+    depends_on:
+      - bind
+    # Siempre se reiniciara el contenedor si este se detiene
+    restart: always
+
+  # Tercer servicio
+  squid:
     # Indicamos que se debe de construir la imagen para este servicio
     build:
       # El Dockerfile se encuentra en este directorio
@@ -12,28 +59,28 @@ services:
     # en este caso del host al puerto del contenedor, es como si fuera un puente entre estos 2 puertos
     ports:
       - "3128:3128" # Formato PUERTO_HOST:CONTENEDOR_HOST
+    # Agregamos nuestra red llamada "proyecto" (declarada después)
+    networks:
+      - proyecto
+    # Utilizamos el servidor BIND para nuestro DNS
+    dns:
+      - 192.168.0.2
+    # Definimos el orden de inicio para nuestros servicios, en donde BIND y apache debe de estar iniciado antes de que squid pueda estarlo
+    depends_on:
+      - bind
+      - apache
     # Siempre se reiniciara el contenedor si este se detiene
     restart: always
-    # Ver https://shorturl.at/sI8br para mas información, lo que nos dice es:
-    # "links is used to link a container to another container in the same Compose file. It creates a network connection between 
-    # the linked containers, allowing them to communicate with each other." ademas de esto, se agrega por ejemplo "local.pagina1.com"
-    # al directorio /etc/hosts de este contenedor. Asi que redirigimos estas solicitudes al contenedor de apache el cual ya sabe que 
-    # hacer con estas solicitudes
-    links:
-      - "apache:local.pagina1.com"
-      - "apache:local.pagina2.com"
-      - "apache:local.pagina3.com"
 
-  apache:
-    # Indicamos que se debe de construir la imagen para este servicio
-    build:
-      # El Dockerfile se encuentra en este directorio
-      context: ./virtualHostApache
-      # Especificamos el nombre del archivo dentro del directorio (contexto)
-      dockerfile: Dockerfile
-    # Para que el puerto del contenedor (el que expusimos) sea accesible desde la maquina anfitriona, a esto se le llama "mapear un puerto",
-    # en este caso del host al puerto del contenedor, es como si fuera un puente entre estos 2 puertos
-    ports:
-      - "80:80" # Formato PUERTO_HOST:CONTENEDOR_HOST
-    # Siempre se reiniciara el contenedor si este se detiene
-    restart: always
+# Creamos nuestra red
+networks:
+  proyecto:
+    # Ver https://shorturl.at/QFH4A para mejor entendimiento sobre este driver
+    driver: bridge
+    # IP address management nos deja configurar como se asignan las direcciones en la red
+    ipam:
+      config:
+        # Definimos el rengo de direcciones, en este caso utilizamos /24 pero en realidad puede ser como sea
+        - subnet: 192.168.0.0/24
+        # Especifica la dirección IP de la puerta de enlace para esta subred
+          gateway: 192.168.0.1

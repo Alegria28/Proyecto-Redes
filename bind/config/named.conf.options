@@ -1,6 +1,0 @@
-options {
-    directory "/var/cache/bind"; // Directorio donde Bind9 guarda su caché
-    recursion yes;               // Permitir consultas recursivas
-    allow-query { any; };        // Permitir consultas desde cualquier IP (ajusta según tus necesidades de seguridad)
-
-};

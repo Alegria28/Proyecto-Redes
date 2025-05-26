@@ -1,0 +1,19 @@
+// Establece opciones globales para el servidor, excepto si se anulan/sobrescriben dentro de un view en especifico, en ese caso tendrá
+// las configuraciones que tenga el view 
+options {
+    // Definimos el directorio de trabajo para BIND
+    directory "/var/cache/bind"; 
+};
+
+// ACL (Access Control List) permite definir conjuntos nombrados de direcciones IP o rangos de red
+
+// Definimos el ACL con este nombre, el cual incluye todas las direcciones dentro de esta subred
+acl "subredDocker" {
+    // Esta es la subred definida en "docker-compose.yml"
+    192.168.0.0/24;
+};
+
+// Definimos el ACL con este nombre, la cual define solamente el gateway que hemos definido para nuestra subred
+acl "subredDockerGateway" {
+    192.168.0.1;    
+};

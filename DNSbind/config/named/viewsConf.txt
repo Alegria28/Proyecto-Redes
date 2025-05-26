@@ -1,0 +1,77 @@
+// Ver https://shorturl.at/XrfZy para entender el funcionamiento de "views" en BIND
+
+// Creamos un view para host que están fuera de la subred creada para docker, en este caso, para la maquina anfitriona
+view "external_host" {
+    // Declaramos la IP de los host que pertenecen a esta vista (los que utilizan el gateway) para hacer las consultas
+    match-clients { subredDockerGateway; };
+
+    // Para que el servidor encuentre por si mismo nombres de dominios que no están definidos en las zonas manualmente
+    recursion yes;                         
+
+    // Permitimos cualquier consulta
+    allow-query { any; };                  
+
+    // Incluimos las zonas que vienen ya por defecto en BIND
+    include "/etc/bind/named.conf.default-zones";
+
+    // Creamos nuestras propias zonas para cada uno de nuestros dominios, las cuales resuelven 127.0.0.1 para la maquina anfitriona
+
+    zone "local.pagina1.com" {
+        // Este servidor BIND es la "fuente autoritativa" para esta zona
+        type master;
+        // Especificamos el archivo que contiene la configuración de registros para esta zona
+        file "/etc/bind/db.local.pagina1.com.host"; 
+    };
+
+    zone "local.pagina2.com" {
+
+        type master;
+
+        file "/etc/bind/db.local.pagina2.com.host"; 
+    };
+
+    zone "local.pagina3.com" {
+
+        type master;
+
+        file "/etc/bind/db.local.pagina3.com.host"; 
+    };
+};
+
+// Creamos un view para host que están dentro de la subred creada por docker, en este caso, para los contenedores
+view "internal" {
+    // Declaramos la IP de los host que pertenecen a esta vista (los que están en la subred) para hacer las consultas
+    match-clients { subredDocker; }; 
+
+    // Para que el servidor encuentre por si mismo nombres de dominios que no están definidos en las zonas manualmente
+    recursion yes;                  
+
+    // Permitimos cualquier consulta
+    allow-query { any; };                   
+
+    // Incluimos las zonas que vienen ya por defecto en BIND
+    include "/etc/bind/named.conf.default-zones";
+
+    // Creamos nuestras propias zonas para cada uno de nuestros dominios, las cuales resuelven 192.168.0.3 para los contenedores
+
+    zone "local.pagina1.com" {
+        // Este servidor BIND es la "fuente autoritativa" para esta zona
+        type master;
+        // Especificamos el archivo que contiene la configuración de registros para esta zona
+        file "/etc/bind/db.local.pagina1.com";
+    };
+
+    zone "local.pagina2.com" {
+
+        type master;
+
+        file "/etc/bind/db.local.pagina2.com";
+    };
+
+    zone "local.pagina3.com" {
+
+        type master;
+        
+        file "/etc/bind/db.local.pagina3.com";
+    };
+};
