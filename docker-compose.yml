@@ -1,6 +1,3 @@
-# Versión del archivo de configuración de Docker Compose
-version: '3.8'
-
 # Definimos los servicios que vamos a tener
 services:
   # Primer servicio

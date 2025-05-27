@@ -12,7 +12,4 @@ COPY ipTablesConf.sh /ipTablesConf.sh
 RUN chmod +x /ipTablesConf.sh
 
 # Solo para mantener el contenedor arriba
-CMD ["tail", "-f", "/dev/null"] 
-
-# Ejecutamos el script shell usando /bin/bash 
-# CMD ["/bin/bash", "/ipTablesConf.sh"]
+# CMD ["tail", "-f", "/dev/null"] 

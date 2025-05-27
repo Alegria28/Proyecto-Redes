@@ -3,7 +3,7 @@
 # el interpretador con el cual nuestro Shell Script se correrá
 
 # Simple mensaje de inicio
-echo "Empezando configuración de los iptables"
+echo "----- Empezando configuración de los iptables -----"
 
 # En la PC anfitriona hay una cadena llamada DOCKER-USER la cual docker crea y utiliza para que los usuarios puedan añadir reglas personalizadas
 # que afectan el trafico de los contenedores 
@@ -12,8 +12,9 @@ echo "Empezando configuración de los iptables"
 
 # Con -F borramos todas las reglas en esta cadena dentro de esta cadena
 iptables -F DOCKER-USER 
-# Intentamos borrar esta cadena (después de haberla vaciado), aunque se espera que no lo haga ya que esta esta siendo usada por otra (FORWARD)
-iptables -X DOCKER-USER
+# Intentamos borrar esta cadena (después de haberla vaciado), aunque se espera que no lo haga ya que esta esta siendo usada por otra (FORWARD),
+# por lo que redirigimos el error a null
+iptables -X DOCKER-USER 2>/dev/null
 
 # ------ Crear cadena ------
 
@@ -30,3 +31,22 @@ iptables -N DOCKER-USER 2>/dev/null
 # - Si no existe, insertamos (-I) la regla DOCKER-USER en la cadena FORWARD para que el trafico pase por DOCKER-USER, asegurando
 # que las reglas declaradas en DOCKER-USER sean procesadas
 iptables -C FORWARD -j DOCKER-USER || iptables -I FORWARD -j DOCKER-USER
+
+# ------ Permitimos el trafico establecido y relacionado en la cadena DOCKER-USER ------
+
+# Agrega (-A) una regla a la cadena DOCKER-USER para permitir (-j ACCEPT) el tráfico de conexiones ya establecidas (ESTABLISHED)
+# y el tráfico relacionado con conexiones existentes (RELATED), esto se logra utilizando el módulo conntrack (connection tracking) 
+# (-m conntrack) y especificando los estados (--ctstate)
+# Esto es MUY IMPORTANTE ya que aseguramos que haya una conexión bidireccional entre los contenedores y una conexión existente 
+# con los puertos
+iptables -A DOCKER-USER -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+# Es importante notar que la dirección de red de la universidad es: 172.16.152.0/21, por lo que podemos trabajar con direcciones IP
+# en el rango 172.16.152.1-172.16.159.254
+# La dirección de red se obtiene haciendo un AND con los bits de la mascara (/21) y los bits de una dirección IP de esa subred
+
+# ------ 1. Denegar acceso al puerto 80 a un equipo en especifico ------
+
+# En este caso, agregamos una regla (-A) a nuestra cadena para esta IP en especifico (172.16.152.69) 
+# bloqueando (-j DROP) el protocolo tcp en el puerto 80
+iptables -A DOCKER-USER -s 172.16.152.69 -p tcp --dport 80 -j DROP
