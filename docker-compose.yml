@@ -90,7 +90,7 @@ services:
     # Utilizamos el servidor BIND para nuestro DNS
     dns:
       - 192.168.0.2
-    # Definimos el orden de inicio para nuestros servicios, en donde BIND y apache debe de estar iniciado antes de que squid pueda estarlo
+    # Definimos el orden de inicio para nuestros servicios
     depends_on:
       - iptables
       - bind

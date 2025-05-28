@@ -1,25 +1,57 @@
 #!/bin/bash
+# A esto se le llama shebang (!#), el cual viene seguido de una ruta para el ejecutable. Esto es para especificar
+# el interpretador con el cual nuestro Shell Script se correrá
+
+# Mantener el comportamiento original de salir en caso de error
 set -e
 
-echo "----- Empezando configuración de los iptables (simplificado) -----"
+# Simple mensaje de inicio
+echo "----- Empezando configuración de los iptables -----"
+
+# En la PC anfitriona hay una cadena llamada DOCKER-USER la cual docker crea y utiliza para que los usuarios puedan añadir reglas personalizadas
+# que afectan el trafico de los contenedores
 
 echo "Estado de DOCKER-USER (host) ANTES de modificar (desde contenedor):"
 /usr/sbin/iptables-nft -L DOCKER-USER -n -v
 
-echo "Limpiando DOCKER-USER..."
-# Solo limpiamos la cadena, Docker deberia haberla creado.
+# ------ Limpiar cadena DOCKER-USER ------
+
+# Limpiamos (-F) las reglas que tiene esta cadena, de esta manera aseguramos que se agreguen nuevas reglas 
+echo "Limpiando cadena DOCKER-USER"
 /usr/sbin/iptables-nft -F DOCKER-USER
 
-echo "Agregando reglas a DOCKER-USER..."
-# Permitir tráfico establecido y relacionado
-/usr/sbin/iptables-nft -A DOCKER-USER -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT -m comment --comment "Regla_Contenedor_RELATED_ESTABLISHED"
+# ------ Verificar regla DOCKER-USER en cadena FORWARD ------
 
-# Denegar acceso al puerto 80 para IP específica
-/usr/sbin/iptables-nft -A DOCKER-USER -s 192.168.1.85 -p tcp --dport 80 -j DROP -m comment --comment "Regla_Contenedor_DROP_80_CELULAR"
+# Verificamos (-C) si existe una regla en la cadena FORWARD que salte (-j) a DOCKER-USER
+# Si no existe, insertamos (-I) la regla en la primera posición de FORWARD
+# El '2>/dev/null' en -C suprime el mensaje de error si la regla no existe, permitiendo que '||' funcione
+echo "Verificando y asegurando el salto de FORWARD a DOCKER-USER..."
+if ! /usr/sbin/iptables-nft -C FORWARD -j DOCKER-USER 2>/dev/null; then
+    /usr/sbin/iptables-nft -I FORWARD 1 -j DOCKER-USER
+fi
+
+echo "Agregando reglas a DOCKER-USER"
+
+# ------ Permitimos el trafico establecido y relacionado en la cadena DOCKER-USER ------
+
+# Agrega (-A) una regla a la cadena DOCKER-USER para permitir (-j ACCEPT) el tráfico de conexiones ya establecidas (ESTABLISHED)
+# y el tráfico relacionado con conexiones existentes (RELATED), esto se logra utilizando el módulo conntrack (connection tracking)
+# (-m conntrack) y especificando los estados (--ctstate)
+# Esto es MUY IMPORTANTE ya que aseguramos que haya una conexión bidireccional entre los contenedores y una conexión existente
+# con los puertos
+/usr/sbin/iptables-nft -A DOCKER-USER -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+# Es importante notar que la dirección de red de la universidad es: 172.16.152.0/21, por lo que podemos trabajar con direcciones IP
+# en el rango 172.16.152.1-172.16.159.254
+# La dirección de red se obtiene haciendo un AND con los bits de la mascara (/21) y los bits de una dirección IP de esa subred
+
+# ------ 1. Denegar acceso al puerto 80 a un equipo en especifico ------
+
+# En este caso, agregamos una regla (-A) a nuestra cadena para esta IP en especifico (172.16.152.131)
+# bloqueando (-j DROP) el protocolo tcp en el puerto 80, agregando un comentario informativo sobre esta regla
+/usr/sbin/iptables-nft -A DOCKER-USER -s 172.16.152.131 -p tcp --dport 80 -j DROP -m comment --comment "Regla 1"
 
 echo "Estado de DOCKER-USER (host) DESPUÉS de modificar (desde contenedor):"
 /usr/sbin/iptables-nft -L DOCKER-USER -n -v
 
-echo "Script finalizado, manteniendo contenedor activo."
-# Mantener el contenedor corriendo
-tail -f /dev/null
+echo "Configuración completada"
