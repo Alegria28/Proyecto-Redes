@@ -3,6 +3,9 @@
 options {
     // Definimos el directorio de trabajo para BIND
     directory "/var/cache/bind"; 
+
+    listen-on-v6 { none; };       // Disable listening on IPv6
+    resolver-query-timeout 5;   // Add a 5-second timeout for resolver queries
 };
 
 // ACL (Access Control List) permite definir conjuntos nombrados de direcciones IP o rangos de red
