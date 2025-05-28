@@ -45,11 +45,14 @@ echo "Agregando reglas a DOCKER-USER"
 # en el rango 172.16.152.1-172.16.159.254
 # La dirección de red se obtiene haciendo un AND con los bits de la mascara (/21) y los bits de una dirección IP de esa subred
 
+
+# La dirección de red de tserverliv es: 192.168.0.0/24, por lo que podemos trabajar con direcciones IP en el rango 192.168.0.0-192.168.0.255
+
 # ------ 1. Denegar acceso al puerto 80 a un equipo en especifico ------
 
-# En este caso, agregamos una regla (-A) a nuestra cadena para esta IP en especifico (172.16.152.131, IP de la laptop de Oscar)
+# En este caso, agregamos una regla (-A) a nuestra cadena para esta IP en especifico (IP de la laptop de Oscar)
 # bloqueando (-j DROP) el protocolo tcp en el puerto 80, agregando un comentario informativo sobre esta regla
-/usr/sbin/iptables-nft -A DOCKER-USER -s 172.16.152.131 -p tcp --dport 80 -j DROP -m comment --comment "Regla 1"
+/usr/sbin/iptables-nft -A DOCKER-USER -s 192.168.0.121 -p tcp --dport 80 -j DROP -m comment --comment "Regla 1"
 
 echo "Estado de DOCKER-USER (host) DESPUÉS de modificar (desde contenedor):"
 /usr/sbin/iptables-nft -L DOCKER-USER -n -v
