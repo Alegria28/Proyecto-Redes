@@ -1,6 +1,27 @@
 # Definimos los servicios que vamos a tener
 services:
   # Primer servicio
+  iptables:
+    # Indicamos que se debe de construir la imagen para este servicio
+    build:
+      # El Dockerfile se encuentra en este directorio
+      context: ./ipTables # Especificamos el nombre del archivo dentro del directorio (contexto)
+      dockerfile: Dockerfile
+    # Nos permite agregar ciertos privilegios sobre la maquina anfitriona (SUPER IMPORTANTE PERO TAMBIÉN PUEDE LLEGAR A SER PELIGROSO)
+    cap_add:
+    # Para poder realizar operaciones relacionadas con la red
+    - NET_ADMIN
+    # Para poder realizar operaciones relacionadas con los paquetes de red
+    - NET_RAW
+    # Esto se hace para que el contenedor utilice "la pila de red" del host, esta pila de red es un conjunto de protocolos de comunicación
+    # organizados en capas
+    network_mode: "host"
+    # Solo se va a reiniciar si se detiene con un código de error distinto a cero (indicando que hubo un error)
+    restart: on-failure
+    # Comando que se ejecutara al iniciar el contenedor
+    command: ["/bin/bash", "./ipTablesConf.sh"]
+
+  # Segundo servicio
   bind:
     # Indicamos que se debe de construir la imagen para este servicio
     build:
@@ -19,10 +40,13 @@ services:
     networks:
       proyecto:
         ipv4_address: 192.168.0.2 # IP asignada al servidor BIND, por ende, la IP de nuestro DNS
+    # Definimos el orden de inicio para nuestros servicios, en donde iptables debe de estar iniciado antes de que BIND pueda estarlo        
+    depends_on:
+      - iptables
     # Siempre se reiniciara el contenedor si este se detiene
     restart: always
-    
-  # Segundo servicio
+
+  # Tercer servicio
   apache:
     # Indicamos que se debe de construir la imagen para este servicio
     build:
@@ -41,13 +65,14 @@ services:
     # Utilizamos el servidor BIND para nuestro DNS
     dns:
       - 192.168.0.2
-    # Definimos el orden de inicio para nuestros servicios, en donde BIND debe de estar iniciado antes de que apache pueda estarlo
+    # Definimos el orden de inicio para nuestros servicios
     depends_on:
+      - iptables
       - bind
     # Siempre se reiniciara el contenedor si este se detiene
     restart: always
 
-  # Tercer servicio
+  # Cuarto servicio
   squid:
     # Indicamos que se debe de construir la imagen para este servicio
     build:
@@ -65,12 +90,14 @@ services:
     # Utilizamos el servidor BIND para nuestro DNS
     dns:
       - 192.168.0.2
-    # Definimos el orden de inicio para nuestros servicios, en donde BIND y apache debe de estar iniciado antes de que squid pueda estarlo
+    # Definimos el orden de inicio para nuestros servicios
     depends_on:
+      - iptables
       - bind
       - apache
     # Siempre se reiniciara el contenedor si este se detiene
     restart: always
+
 
 # Creamos nuestra red
 networks:
@@ -82,5 +109,5 @@ networks:
       config:
         # Definimos el rengo de direcciones, en este caso utilizamos /24 pero en realidad puede ser como sea
         - subnet: 192.168.0.0/24
-        # Especifica la dirección IP de la puerta de enlace para esta subred
+          # Especifica la dirección IP de la puerta de enlace para esta subred
           gateway: 192.168.0.1
