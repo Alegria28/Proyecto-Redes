@@ -71,6 +71,11 @@ iptables -A DOCKER-USER -m iprange --src-range 192.168.0.70-192.168.0.160 -o enp
 # que es el 1025 en el contenedor
 iptables -A DOCKER-USER -m mac --mac-source 40:1a:58:d5:45:7a -p tcp --dport 1025 -j DROP -m comment --comment "Regla 5"
 
+# ------ 7. Denegar acceso al puerto 443 (HTTPS) para un equipo en especifico -----
+
+# Muy similar a la regla 3, pero para el puerto 443
+iptables -A DOCKER-USER -s 192.168.0.165 -o enp4s0 -p tcp --dport 443 -j DROP -m comment --comment "Regla 7"
+
 echo "Estado de DOCKER-USER (host) DESPUÉS de modificar (desde contenedor):"
 iptables -L DOCKER-USER -n -v
 

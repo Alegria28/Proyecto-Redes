@@ -148,7 +148,7 @@ services:
     # Comando para mantener el contenedor corriendo
     command: ["tail", "-f", "/dev/null"]
 
-    # Séptimo servicio (contenedor de prueba para la 5ta regla)
+  # Séptimo servicio (contenedor de prueba para la 5ta regla)
   servidorSMTP:
     # Utilizamos nuevamente una imagen ya construida para una simple prueba del servidor, ver https://shorturl.at/jPkCa
     image: haravich/fake-smtp-server
@@ -167,6 +167,31 @@ services:
       - squid
       - noTraficoSalida
     restart: always
+
+  # Octavo servicio (Contenedor de prueba para la 7ma regla)
+  bloqueopuertohttps:
+    # Indicamos que se debe de construir la imagen para este servicio
+    build:
+      # Indicamos en que directorio y como se llama el archivo para crear la imagen
+      context: ./bloqueoHTTPS
+      dockerfile: Dockerfile
+    networks:
+      proyecto:
+        # Asignamos la IP fuera del rango prohibido en la regla 3 (192.168.0.70-192.168.0.160) para que se vea que efectivamente
+        # el puerto 443 ha sido bloqueado
+        ipv4_address: 192.168.0.165 
+    # Nos aseguramos que todos los contenedores se inicien correctamente
+    depends_on:
+      - iptables 
+      - bind
+      - apache
+      - squid
+      - servidorFTP
+      - servidorSMTP
+    # En caso de que se pare, se va a reiniciar siempre
+    restart: always
+    # Comando para mantener el contenedor corriendo
+    command: ["tail", "-f", "/dev/null"]    
 
 
 # Creamos nuestra red
