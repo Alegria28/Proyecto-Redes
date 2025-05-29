@@ -5,6 +5,9 @@ FROM ubuntu:latest
 # - Instalamos el paquete de ubuntu para trabajar con iptables
 RUN apt update && apt install -y iptables
 
+# Para poder hacer pruebas de ping y curl en el contenedor, instalamos los paquetes
+RUN apt install -y iputils-ping curl
+
 # Copiamos nuestro script shell al contenedor
 COPY ipTablesConf.sh /ipTablesConf.sh
 

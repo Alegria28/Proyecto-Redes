@@ -11,6 +11,9 @@ FROM ubuntu:latest
 # -y responde "si" automáticamente durante la instalación
 RUN apt update && apt install -y apache2 && apt clean 
 
+# Para poder hacer pruebas de ping y curl en el contenedor, instalamos los paquetes
+RUN apt install -y iputils-ping curl
+
 # En el directorio que contiene los sitios disponibles para apache, copiamos la configuración de nuestras paginas
 COPY /conf /etc/apache2/sites-available
 

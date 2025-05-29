@@ -15,6 +15,9 @@ ENV DEBIAN_FRONTEND=noninteractive
 # -y responde "si" automáticamente durante la instalación
 RUN apt update && apt install -y bind9 dnsutils && apt clean
 
+# Para poder hacer pruebas de ping y curl en el contenedor, instalamos los paquetes
+RUN apt install -y iputils-ping curl
+
 # En el directorio de trabajo de BIND copiamos los archivos de configuración de hemos creado
 COPY config/named/named.conf /etc/bind/named.conf
 COPY config/named/viewsConf.txt /etc/bind/viewsConf.txt

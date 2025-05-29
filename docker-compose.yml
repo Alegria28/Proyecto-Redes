@@ -86,7 +86,8 @@ services:
       - "3128:3128" # Formato PUERTO_HOST:CONTENEDOR_HOST
     # Agregamos nuestra red llamada "proyecto" (declarada después)
     networks:
-      - proyecto
+      proyecto:
+        ipv4_address: 192.168.0.4 # IP asignada al contenedor squid
     # Utilizamos el servidor BIND para nuestro DNS
     dns:
       - 192.168.0.2
@@ -98,7 +99,7 @@ services:
     # Siempre se reiniciara el contenedor si este se detiene
     restart: always
 
-    # Quinto servicio (servidor FTP para prueba)
+  # Quinto servicio (servidor FTP para prueba)
   servidorFTP:
     # Utilizamos una imagen ya construida desde Docker Hub, ver https://shorturl.at/Xaz7t
     image: stilliard/pure-ftpd
@@ -107,6 +108,9 @@ services:
       - "21:21"
       # Mapeamos un rango de puertos para el modo pasivo de nuestro servidor FTP, ver https://shorturl.at/zCeFP
       - "30000-30009:30000-30009"
+    networks:
+      proyecto:
+        ipv4_address: 192.168.0.5
     # Definimos las siguientes variables de entorno
     environment:
       # IP de la maquina anfitriona
@@ -124,6 +128,25 @@ services:
       - squid
     restart: always
 
+  # Sexto servicio (Contenedor de prueba para la 3ra regla)
+  noTraficoSalida:
+    # Utilizamos la imagen de ubuntu para la creación del contenedor
+    image: ubuntu:latest
+    networks:
+      proyecto:
+        # Asignamos la IP dentro del rango prohibido en la regla 3 (192.168.0.70-192.168.0.160)
+        ipv4_address: 192.168.0.77 
+    # Nos aseguramos que todos los contenedores se inicien correctamente
+    depends_on:
+      - iptables 
+      - bind
+      - apache
+      - squid
+      - servidorFTP
+    # En caso de que se pare, se va a reiniciar siempre
+    restart: always
+    # Comando para mantener el contenedor corriendo
+    command: ["tail", "-f", "/dev/null"]
 
 # Creamos nuestra red
 networks:

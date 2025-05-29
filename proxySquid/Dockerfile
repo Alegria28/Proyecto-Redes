@@ -1,6 +1,9 @@
 # La imagen se creara basándose en Ubuntu junto con la aplicación de Squid (en su ultima version en Docker Hub)
 FROM ubuntu/squid:latest
 
+# Para poder hacer pruebas de ping y curl en el contenedor, instalamos los paquetes, pero no sin antes actualizar el contenedor
+RUN apt update && apt install && apt install -y iputils-ping curl
+
 # Copiamos los archivos creados con la información sobre los sitios y palabras prohibidas ademas de la configuración que va a tener
 # el proxy de squid en la imagen creada
 COPY squid.conf /etc/squid/squid.conf

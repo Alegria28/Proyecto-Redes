@@ -12,13 +12,13 @@ echo "----- Empezando configuración de los iptables -----"
 # que afectan el trafico de los contenedores
 
 echo "Estado de DOCKER-USER (host) ANTES de modificar (desde contenedor):"
-/usr/sbin/iptables-nft -L DOCKER-USER -n -v
+iptables -L DOCKER-USER -n -v
 
 # ------ Limpiar cadena DOCKER-USER ------
 
 # Limpiamos (-F) las reglas que tiene esta cadena, de esta manera aseguramos que se agreguen nuevas reglas 
 echo "Limpiando cadena DOCKER-USER"
-/usr/sbin/iptables-nft -F DOCKER-USER
+iptables -F DOCKER-USER
 
 # ------ Verificar regla DOCKER-USER en cadena FORWARD ------
 
@@ -26,8 +26,8 @@ echo "Limpiando cadena DOCKER-USER"
 # Si no existe, insertamos (-I) la regla en la primera posición de FORWARD
 # El '2>/dev/null' en -C suprime el mensaje de error si la regla no existe, permitiendo que '||' funcione
 echo "Verificando y asegurando el salto de FORWARD a DOCKER-USER..."
-if ! /usr/sbin/iptables-nft -C FORWARD -j DOCKER-USER 2>/dev/null; then
-    /usr/sbin/iptables-nft -I FORWARD 1 -j DOCKER-USER
+if ! iptables -C FORWARD -j DOCKER-USER 2>/dev/null; then
+    iptables -I FORWARD 1 -j DOCKER-USER
 fi
 
 echo "Agregando reglas a DOCKER-USER"
@@ -39,7 +39,7 @@ echo "Agregando reglas a DOCKER-USER"
 # (-m conntrack) y especificando los estados (--ctstate)
 # Esto es MUY IMPORTANTE ya que aseguramos que haya una conexión bidireccional entre los contenedores y una conexión existente
 # con los puertos
-/usr/sbin/iptables-nft -A DOCKER-USER -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+iptables -A DOCKER-USER -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
 # Es importante notar que la dirección de red de la universidad es: 172.16.152.0/21, por lo que podemos trabajar con direcciones IP
 # en el rango 172.16.152.1-172.16.159.254
@@ -51,15 +51,21 @@ echo "Agregando reglas a DOCKER-USER"
 # ------ 1. Denegar acceso al puerto 80 a un equipo en especifico ------
 
 # En este caso, agregamos una regla (-A) a nuestra cadena para esta IP en especifico bloqueando (-j DROP) el protocolo tcp en el puerto 80 (HTTP),
-# agregando un comentario informativo sobre esta regla
-/usr/sbin/iptables-nft -A DOCKER-USER -s 192.168.1.77 -p tcp --dport 80 -j DROP -m comment --comment "Regla 1"
+# agregando un comentario informativo sobre esta regla, la dirección IP de origen (-s), -p se refiere a protocolo y --dport se refiere a destination port
+iptables -A DOCKER-USER -s 192.168.1.77 -p tcp --dport 80 -j DROP -m comment --comment "Regla 1"
 
 # ------ 2. Denegar acceso al puerto 21 a un equipo en especifico ------
 
 # Volvemos a hacer lo mismo para la misma IP, pero ahora estaremos bloqueando el puerto 21 (FTP)
-/usr/sbin/iptables-nft -A DOCKER-USER -s 192.168.1.77 -p tcp --dport 21 -j DROP -m comment --comment "Regla 2"
+iptables -A DOCKER-USER -s 192.168.1.77 -p tcp --dport 21 -j DROP -m comment --comment "Regla 2"
+
+# ------ 3. Denegar trafico de salida para un rango de direcciones ------
+
+# Utilizamos -m para cargar módulos de concordancia, específicamente el iprange el cual nos permite especificar un rango de direcciones IP (dentro de los contenedores) 
+# usando --src-range, -o especifica la interfaz de salida. En este caso solo bloqueamos el contenedor de apache para "conectarse hacia el exterior"
+iptables -A DOCKER-USER -m iprange --src-range 192.168.0.70-192.168.0.160 -o enp4s0 -j DROP -m comment --comment "Regla 3"
 
 echo "Estado de DOCKER-USER (host) DESPUÉS de modificar (desde contenedor):"
-/usr/sbin/iptables-nft -L DOCKER-USER -n -v
+iptables -L DOCKER-USER -n -v
 
 echo "Configuración completada"
