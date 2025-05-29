@@ -148,6 +148,27 @@ services:
     # Comando para mantener el contenedor corriendo
     command: ["tail", "-f", "/dev/null"]
 
+    # Séptimo servicio (contenedor de prueba para la 5ta regla)
+  servidorSMTP:
+    # Utilizamos nuevamente una imagen ya construida para una simple prueba del servidor
+    image: haravich/fake-smtp-server
+    ports:
+      # IMPORTANTE mapear los puertos del contenedor a los de la maquina host, ya que estos se necesitan para hacer
+      # el telnet <IP_MAQUINA_ANFITRIONA> 25
+      - "25:25"
+    networks:
+      proyecto:
+        ipv4_address: 192.168.0.6 # IP asignada al servidor
+    # Nos aseguramos de que los contenedores anteriores se inicien correctamente
+    depends_on:
+      - iptables
+      - bind
+      - apache
+      - squid
+      - noTraficoSalida
+    restart: always
+
+
 # Creamos nuestra red
 networks:
   proyecto:

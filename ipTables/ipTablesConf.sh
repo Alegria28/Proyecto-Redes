@@ -65,6 +65,11 @@ iptables -A DOCKER-USER -s 192.168.1.77 -p tcp --dport 21 -j DROP -m comment --c
 # usando --src-range, -o especifica la interfaz de salida. En este caso solo bloqueamos el contenedor de apache para "conectarse hacia el exterior"
 iptables -A DOCKER-USER -m iprange --src-range 192.168.0.70-192.168.0.160 -o enp4s0 -j DROP -m comment --comment "Regla 3"
 
+# ------ 5. Denegar acceso al puerto 25 (STMTP) para un equipo en especifico usando su MAC ------
+
+# Utilizamos el modulo mac para especificar la mac de origen que vamos a bloquear
+iptables -A DOCKER-USER -m mac --mac-source 28-D0-EA-0A-FF-DC -p tcp --dport 25 -j DROP -m comment --comment "Regla 5" 
+
 echo "Estado de DOCKER-USER (host) DESPUÉS de modificar (desde contenedor):"
 iptables -L DOCKER-USER -n -v
 
