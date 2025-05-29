@@ -98,6 +98,32 @@ services:
     # Siempre se reiniciara el contenedor si este se detiene
     restart: always
 
+    # Quinto servicio (servidor FTP para prueba)
+  servidorFTP:
+    # Utilizamos una imagen ya construida desde Docker Hub, ver https://shorturl.at/Xaz7t
+    image: stilliard/pure-ftpd
+    # Mapeamos el puerto del contenedor hacia el de la maquina host, en este caso el puerto 21
+    ports:
+      - "21:21"
+      # Mapeamos un rango de puertos para el modo pasivo de nuestro servidor FTP, ver https://shorturl.at/zCeFP
+      - "30000-30009:30000-30009"
+    # Definimos las siguientes variables de entorno
+    environment:
+      # IP de la maquina anfitriona
+      PUBLICHOST: "192.168.1.85"
+      # Usuario y contraseña para el usuario en nuestro servidor
+      FTP_USER_NAME: "servidorPrueba"
+      FTP_USER_PASS: "servidorPrueba"
+      # Especificamos el directorio para el usuario
+      FTP_USER_HOME: "/home/servidorPrueba"
+    # Nos aseguramos que todos los anteriores se hayan levantado correctamente antes de iniciar este
+    depends_on:
+      - iptables
+      - bind
+      - apache
+      - squid
+    restart: always
+
 
 # Creamos nuestra red
 networks:

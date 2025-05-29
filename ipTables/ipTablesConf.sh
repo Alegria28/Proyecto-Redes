@@ -50,9 +50,14 @@ echo "Agregando reglas a DOCKER-USER"
 
 # ------ 1. Denegar acceso al puerto 80 a un equipo en especifico ------
 
-# En este caso, agregamos una regla (-A) a nuestra cadena para esta IP en especifico (IP de la laptop de Oscar)
-# bloqueando (-j DROP) el protocolo tcp en el puerto 80, agregando un comentario informativo sobre esta regla
-/usr/sbin/iptables-nft -A DOCKER-USER -s 192.168.0.121 -p tcp --dport 80 -j DROP -m comment --comment "Regla 1"
+# En este caso, agregamos una regla (-A) a nuestra cadena para esta IP en especifico bloqueando (-j DROP) el protocolo tcp en el puerto 80 (HTTP),
+# agregando un comentario informativo sobre esta regla
+/usr/sbin/iptables-nft -A DOCKER-USER -s 192.168.1.77 -p tcp --dport 80 -j DROP -m comment --comment "Regla 1"
+
+# ------ 2. Denegar acceso al puerto 21 a un equipo en especifico ------
+
+# Volvemos a hacer lo mismo para la misma IP, pero ahora estaremos bloqueando el puerto 21 (FTP)
+/usr/sbin/iptables-nft -A DOCKER-USER -s 192.168.1.77 -p tcp --dport 21 -j DROP -m comment --comment "Regla 2"
 
 echo "Estado de DOCKER-USER (host) DESPUÉS de modificar (desde contenedor):"
 /usr/sbin/iptables-nft -L DOCKER-USER -n -v
