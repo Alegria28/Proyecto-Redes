@@ -67,8 +67,9 @@ iptables -A DOCKER-USER -m iprange --src-range 192.168.0.70-192.168.0.160 -o enp
 
 # ------ 5. Denegar acceso al puerto 25 (STMTP) para un equipo en especifico usando su MAC ------
 
-# Utilizamos el modulo mac para especificar la mac de origen que vamos a bloquear
-iptables -A DOCKER-USER -m mac --mac-source 28-D0-EA-0A-FF-DC -p tcp --dport 25 -j DROP -m comment --comment "Regla 5" 
+# Utilizamos el modulo mac para especificar la mac de origen que vamos a bloquear, ademas de también especificar que el puerto de destino que vamos a bloquear, 
+# que es el 1025 en el contenedor
+iptables -A DOCKER-USER -m mac --mac-source 40:1a:58:d5:45:7a -p tcp --dport 1025 -j DROP -m comment --comment "Regla 5"
 
 echo "Estado de DOCKER-USER (host) DESPUÉS de modificar (desde contenedor):"
 iptables -L DOCKER-USER -n -v
