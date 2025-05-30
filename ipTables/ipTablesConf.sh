@@ -97,6 +97,20 @@ iptables -A DOCKER-USER -s 192.168.1.200 -p tcp --dport 2222 -j ACCEPT -m commen
 # Para el resto de trafico, se bloqueara (recordar que es el puerto de destino)
 iptables -A DOCKER-USER -p tcp --dport 2222 -j DROP -m comment --comment "Regla 7.2: Resto del trafico bloqueado"
 
+# ------ Reglas propuestas ------ #
+
+# ------ 9. Denegar el acceso al puerto 23 (Telnet) ------
+
+iptables -A DOCKER-USER -p tcp --dport 23 -j DROP -m comment --comment "Regla 9"
+
+# ------ 10. Denegar el acceso al puerto 110 (POP3) ------
+
+iptables -A DOCKER-USER -p tcp --dport 110 -j DROP -m comment --comment "Regla 10"
+
+# ------ 11. Denegar el acceso al puerto 143 (IMAP) ------
+
+iptables -A DOCKER-USER -p tcp --dport 143 -j DROP -m comment --comment "Regla 10"
+
 echo "Estado de DOCKER-USER (host) DESPUÉS de modificar (desde contenedor):"
 iptables -L DOCKER-USER -n -v
 
