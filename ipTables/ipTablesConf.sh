@@ -109,7 +109,7 @@ iptables -A DOCKER-USER -p tcp --dport 110 -j DROP -m comment --comment "Regla 1
 
 # ------ 11. Denegar el acceso al puerto 143 (IMAP) ------
 
-iptables -A DOCKER-USER -p tcp --dport 143 -j DROP -m comment --comment "Regla 10"
+iptables -A DOCKER-USER -p tcp --dport 143 -j DROP -m comment --comment "Regla 11"
 
 echo "Estado de DOCKER-USER (host) DESPUÉS de modificar (desde contenedor):"
 iptables -L DOCKER-USER -n -v

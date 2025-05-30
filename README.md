@@ -127,6 +127,94 @@ Con el proxy configurado:
 *   **Sitio prohibido (por dominio):** Intenta acceder a `http://www.facebook.com` o `http://www.youtube.com`. El acceso debería ser bloqueado por Squid.
 *   **Palabra prohibida (en URL):** Intenta buscar "juegos" o "casino" en un motor de búsqueda, o intenta acceder a una URL que contenga estas palabras (ej. `http://example.com/pagina-de-juegos.html`). El acceso debería ser bloqueado por Squid.
 
+### 4. Probar las Reglas de Firewall (iptables)
+
+El script `ipTables/ipTablesConf.sh` se ejecuta automáticamente al levantar los servicios con `docker compose up` gracias al servicio `iptables-config` definido en `docker-compose.yml`. Este script modifica las reglas de `iptables` en la máquina anfitriona (host) para controlar el tráfico hacia y desde los contenedores.
+
+**Notas Generales para las Pruebas:**
+*   Necesitarás la dirección IP de tu máquina anfitriona (la que ejecuta Docker). En las pruebas, esta se referirá como `<docker_host_ip>`. ¡
+*   Algunas pruebas requieren acceso a otras máquinas en tu red local con direcciones IP específicas (ej., `192.168.1.77`) o la capacidad de cambiar la IP/MAC de tu máquina de prueba.
+*   Para reglas que bloquean el tráfico saliente de contenedores (ej., a través de `enp4s0`), la interfaz de red `enp4s0` es un ejemplo y podría ser diferente en tu máquina anfitriona (ej., `eth0`, `wlan0`).
+*   Algunas reglas se aplican a puertos de servicios (ej., FTP, SSH) que no están configurados por defecto en este proyecto. Para probarlas, necesitarías desplegar un contenedor con dicho servicio y mapear el puerto correspondiente.
+
+#### a. Regla 1: Denegar acceso al puerto 80 (HTTP) desde `192.168.1.77`
+*   **Desde una máquina con IP `192.168.1.77`:**
+    Intenta acceder al servidor web: `curl http://<docker_host_ip>`
+    *   **Resultado Esperado:** La conexión debería fallar (timeout o rechazo).
+*   **Desde una máquina con IP diferente (ej. `192.168.1.78`):**
+    Intenta acceder al servidor web: `curl http://<docker_host_ip>`
+    *   **Resultado Esperado:** Deberías recibir el contenido de `local.pagina1.com` (o la página por defecto del servidor Apache).
+
+#### b. Regla 2: Denegar acceso al puerto 21 (FTP) desde `192.168.1.77`
+*   **Nota:** Esta prueba asume que tienes un servicio FTP ejecutándose en un contenedor y mapeado al puerto 21 del host.
+*   **Desde una máquina con IP `192.168.1.77`:**
+    Intenta conectar al puerto FTP: `telnet <docker_host_ip> 21`
+    *   **Resultado Esperado:** La conexión debería fallar.
+*   **Desde una máquina con IP diferente:**
+    Intenta conectar al puerto FTP: `telnet <docker_host_ip> 21`
+    *   **Resultado Esperado:** Deberías ver el banner del servidor FTP o un intento de conexión exitoso.
+
+#### c. Regla 3: Denegar tráfico de salida para el rango de IPs de contenedor `192.168.0.70-192.168.0.160`
+*   **Pasos:**
+    1.  Identifica la IP del contenedor Apache (o cualquier otro contenedor relevante):
+        ```bash
+        docker inspect <nombre_o_id_del_contenedor_apache> | grep IPAddress
+        ```
+    2.  Si la IP del contenedor (ej., `192.168.0.X`) está dentro del rango `192.168.0.70-192.168.0.160`:
+        Accede a la shell del contenedor: `docker exec -it <nombre_o_id_del_contenedor_apache> /bin/bash`
+        Dentro del contenedor, intenta acceder a un sitio externo: `curl http://example.com` o `ping 8.8.8.8`
+        *   **Resultado Esperado:** La conexión debería fallar (timeout, "no route to host", etc.).
+*   **Nota:** La interfaz de salida `-o enp4s0` en la regla es la interfaz de red del host. Asegúrate de que coincida con la de tu sistema si es diferente.
+
+#### d. Regla 5: Denegar acceso al puerto 25 (SMTP) desde la MAC `40:1a:58:d5:45:7a`
+*   **Nota:** Esta prueba asume que tienes un servicio SMTP (ej. Postfix, Exim) ejecutándose en un contenedor y mapeado al puerto 25 del host.
+*   **Desde una máquina con la MAC `40:1a:58:d5:45:7a`:**
+    Intenta conectar al puerto 25: `telnet <docker_host_ip> 25`
+    *   **Resultado Esperado:** La conexión debería fallar.
+*   **Desde una máquina con una MAC diferente:**
+    Intenta conectar al puerto 25: `telnet <docker_host_ip> 25`
+    *   **Resultado Esperado:** Deberías ver el banner del servidor SMTP o un intento de conexión exitoso.
+
+#### e. Regla 6: Limitar número de conexiones simultáneas a 20
+*   **Prueba:** Intenta establecer más de 20 conexiones TCP nuevas simultáneamente al servidor Apache (puerto 80). Puedes usar un script simple o herramientas como `ab` (Apache Benchmark).
+    Ejemplo con `curl` en un bucle (ejecutar desde otra máquina o el host):
+    ```bash
+    for i in $(seq 1 30); do (curl -s -o /dev/null -m 2 http://<docker_host_ip>/ && echo "Conexión $i: Éxito") || echo "Conexión $i: Fallo" & done; wait
+    ```
+*   **Resultado Esperado:** Las primeras ~20 conexiones podrían tener éxito. Las conexiones subsiguientes deberían ser rechazadas (la regla usa `REJECT --reject-with tcp-reset`, por lo que el cliente debería recibir un reset de TCP).
+
+#### f. Regla 7: Denegar acceso de salida al puerto 443 (HTTPS) para el contenedor con IP `192.168.0.165`
+*   **Pasos:**
+    1.  Asegúrate de que un contenedor (podría ser necesario configurar uno estáticamente) tenga la IP `192.168.0.165`.
+    2.  Accede a la shell de ese contenedor: `docker exec -it <nombre_contenedor> /bin/bash`
+    3.  Dentro del contenedor, intenta acceder a un sitio HTTPS externo: `curl https://example.com`
+        *   **Resultado Esperado:** La conexión debería fallar.
+*   **Nota:** La interfaz de salida `-o enp4s0` en la regla es la interfaz de red del host.
+
+#### g. Regla 8 (7.1 & 7.2 en script): Permitir acceso al puerto 2222 (SSH) solo desde `192.168.1.200`
+*   **Nota:** Esta prueba asume que tienes un servicio SSH ejecutándose en un contenedor (en su puerto 22 interno) y mapeado al puerto 2222 del host. Necesitarás un nombre de usuario válido para el servidor SSH dentro del contenedor y, posiblemente, una contraseña o una clave SSH configurada. Reemplaza `usuario` con el nombre de usuario real.
+*   **Desde una máquina con IP `192.168.1.200`:**
+    Intenta conectar por SSH: `ssh usuario@<docker_host_ip> -p 2222`
+    *   **Resultado Esperado:** Deberías ver el prompt de SSH o establecer una conexión (después de ingresar la contraseña si es necesaria).
+*   **Desde una máquina con IP diferente:**
+    Intenta conectar por SSH: `ssh usuario@<docker_host_ip> -p 2222`
+    *   **Resultado Esperado:** La conexión debería fallar (timeout o rechazo por `iptables` antes de llegar al prompt de SSH).
+
+#### h. Regla 9: Denegar acceso al puerto 23 (Telnet)
+*   **Desde cualquier máquina:**
+    Intenta conectar al puerto Telnet: `telnet <docker_host_ip> 23`
+*   **Resultado Esperado:** La conexión debería fallar. Esto bloquea el acceso a cualquier servicio que pudiera estar mapeado al puerto 23 del host.
+
+#### i. Regla 10: Denegar acceso al puerto 110 (POP3)
+*   **Desde cualquier máquina:**
+    Intenta conectar al puerto POP3: `telnet <docker_host_ip> 110`
+*   **Resultado Esperado:** La conexión debería fallar. Esto bloquea el acceso a cualquier servicio que pudiera estar mapeado al puerto 110 del host.
+
+#### j. Regla 11: Denegar acceso al puerto 143 (IMAP)
+*   **Desde cualquier máquina:**
+    Intenta conectar al puerto IMAP: `telnet <docker_host_ip> 143`
+*   **Resultado Esperado:** La conexión debería fallar. Esto bloquea el acceso a cualquier servicio que pudiera estar mapeado al puerto 143 del host.
+
 ## Detener los Servicios
 
 Para detener y eliminar los contenedores definidos en `docker-compose.yml`:

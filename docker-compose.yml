@@ -99,7 +99,7 @@ services:
     # Siempre se reiniciara el contenedor si este se detiene
     restart: always
 
-  # Quinto servicio (servidor FTP para prueba)
+  # Quinto servicio (Contenedor para la 2da regla)
   servidorFTP:
     # Utilizamos una imagen ya construida desde Docker Hub, ver https://shorturl.at/Xaz7t
     image: stilliard/pure-ftpd
@@ -129,9 +129,12 @@ services:
     restart: always
 
   # Sexto servicio (Contenedor de prueba para la 3ra regla)
-  noTraficoSalida:
-    # Utilizamos la imagen de ubuntu para la creación del contenedor
-    image: ubuntu:latest
+  notraficosalida:
+    # Indicamos que se debe de construir la imagen para este servicio
+    build:
+      # Indicamos en que directorio y como se llama el archivo para crear la imagen
+      context: ./imagenCompartida
+      dockerfile: Dockerfile
     networks:
       proyecto:
         # Asignamos la IP dentro del rango prohibido en la regla 3 (192.168.0.70-192.168.0.160)
@@ -165,7 +168,7 @@ services:
       - bind
       - apache
       - squid
-      - noTraficoSalida
+      - notraficosalida
     restart: always
 
   # Octavo servicio (Contenedor de prueba para la 7ma regla)
@@ -173,7 +176,7 @@ services:
     # Indicamos que se debe de construir la imagen para este servicio
     build:
       # Indicamos en que directorio y como se llama el archivo para crear la imagen
-      context: ./bloqueoHTTPS
+      context: ./imagenCompartida
       dockerfile: Dockerfile
     networks:
       proyecto:
@@ -188,6 +191,7 @@ services:
       - squid
       - servidorFTP
       - servidorSMTP
+      - notraficosalida
     # En caso de que se pare, se va a reiniciar siempre
     restart: always
     # Comando para mantener el contenedor corriendo
