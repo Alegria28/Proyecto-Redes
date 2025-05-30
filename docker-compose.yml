@@ -193,6 +193,31 @@ services:
     # Comando para mantener el contenedor corriendo
     command: ["tail", "-f", "/dev/null"]    
 
+  # Noveno servicio (servidor SSH)
+  servidorSSH:
+    # Utilizamos una imagen ya construida para el servidor, ver https://shorturl.at/7VLlv
+    image: linuxserver/openssh-server
+    ports:
+      - "2222:2222" # Mapea el puerto 2222 del host al puerto 22 del contenedor
+    networks:
+      proyecto:
+        ipv4_address: 192.168.0.8 # IP asignada al servidor SSH
+    environment:
+      # Usuario y contraseña para el usuario en el servidor
+      - USER_NAME=testuser 
+      - USER_PASSWORD=testpassword 
+      # Permite el acceso con contraseña
+      - PASSWORD_ACCESS=true 
+    depends_on:
+      - iptables 
+      - bind
+      - apache
+      - squid
+      - servidorFTP
+      - servidorSMTP
+      - bloqueopuertohttps
+    restart: on-failure
+
 
 # Creamos nuestra red
 networks:

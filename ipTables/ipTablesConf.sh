@@ -89,6 +89,14 @@ iptables -A DOCKER-USER -p tcp --syn -m connlimit --connlimit-above 20 --connlim
 # Muy similar a la regla 3, pero para el puerto 443
 iptables -A DOCKER-USER -s 192.168.0.165 -o enp4s0 -p tcp --dport 443 -j DROP -m comment --comment "Regla 7"
 
+# ------ 8. Denegar acceso al puerto 22 (SSH) para un equipo en especifico -----
+
+# Primero permitimos la IP del equipo que va a acceder a este puerto
+iptables -A DOCKER-USER -s 192.168.1.200 -p tcp --dport 2222 -j ACCEPT -m comment --comment "Regla 7.1: IP aceptada"
+
+# Para el resto de trafico, se bloqueara (recordar que es el puerto de destino)
+iptables -A DOCKER-USER -p tcp --dport 2222 -j DROP -m comment --comment "Regla 7.2: Resto del trafico bloqueado"
+
 echo "Estado de DOCKER-USER (host) DESPUÉS de modificar (desde contenedor):"
 iptables -L DOCKER-USER -n -v
 
