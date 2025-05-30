@@ -71,6 +71,12 @@ iptables -A DOCKER-USER -m iprange --src-range 192.168.0.70-192.168.0.160 -o enp
 # que es el 1025 en el contenedor
 iptables -A DOCKER-USER -m mac --mac-source 40:1a:58:d5:45:7a -p tcp --dport 1025 -j DROP -m comment --comment "Regla 5"
 
+# ------ 6. Limitar numero de conexiones simultaneas a 20 ------
+
+# Para el protocolo tcp y sus nuevas conexiones (--syn) limitamos las conexiones a solo 20 (--connlimit-above 2) usando el modulo (-m connlimit) desde direcciones IPv4 (--connlimit-mask 32)
+# rechazando (-j REJECT) y enviando un paquete TCP reset --reject-with tcp-reset, esto se hace para que el usuario reciba un mensaje de que la conexión fue rechazada
+iptables -A DOCKER-USER -p tcp --syn -m connlimit --connlimit-above 20 --connlimit-mask 32 -j REJECT --reject-with tcp-reset -m comment --comment "Regla 6"
+
 # ------ 7. Denegar acceso al puerto 443 (HTTPS) para un equipo en especifico -----
 
 # Muy similar a la regla 3, pero para el puerto 443
