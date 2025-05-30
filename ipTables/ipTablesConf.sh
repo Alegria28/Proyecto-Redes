@@ -32,6 +32,14 @@ fi
 
 echo "Agregando reglas a DOCKER-USER"
 
+
+# ------ 4. Bloquear respuestas ICMP tipo ping ------
+
+# Para el protocolo ICMP, específicamente bloqueamos las echo reply (respuesta de los contenedores), esto se hace antes de permitir conexiones 
+# ESTABLISHED y RELATED ya que como funcionan los iptables es que una vez que bloquea este echo reply, ya no va a verificar las otras reglas
+# los iptables trabajan con un orden. Un echo reply, o en realidad un echo request, es una conexión de tipo RELATED, ver https://shorturl.at/8TeFn
+#iptables -A DOCKER-USER -p icmp --icmp-type echo-reply -j DROP -m comment --comment "Regla 4"
+
 # ------ Permitimos el trafico establecido y relacionado en la cadena DOCKER-USER ------
 
 # Agrega (-A) una regla a la cadena DOCKER-USER para permitir (-j ACCEPT) el tráfico de conexiones ya establecidas (ESTABLISHED)
@@ -44,7 +52,6 @@ iptables -A DOCKER-USER -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 # Es importante notar que la dirección de red de la universidad es: 172.16.152.0/21, por lo que podemos trabajar con direcciones IP
 # en el rango 172.16.152.1-172.16.159.254
 # La dirección de red se obtiene haciendo un AND con los bits de la mascara (/21) y los bits de una dirección IP de esa subred
-
 
 # La dirección de red de tserverliv es: 192.168.0.0/24, por lo que podemos trabajar con direcciones IP en el rango 192.168.0.0-192.168.0.255
 
