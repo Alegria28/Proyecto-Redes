@@ -223,6 +223,24 @@ docker compose down
 ```
 Esto detendrá y eliminará los contenedores y redes pero no las imágenes de estas.
 
+## Limpiar el Entorno
+
+El script `limpiar.sh` está diseñado para limpiar completamente el entorno Docker utilizado por este proyecto. Este script realiza las siguientes acciones:
+1. Detiene y elimina todos los contenedores definidos en `docker-compose.yml`.
+2. Elimina todas las imágenes Docker creadas.
+3. Elimina todos los volúmenes Docker.
+
+Para ejecutarlo, simplemente usa:
+```bash
+./limpiar.sh
+```
+**Nota:** Asegúrate de que el script tenga permisos de ejecución. Si no los tiene, puedes otorgarlos con:
+```bash
+chmod +x limpiar.sh
+```
+
+**Advertencia:** Este script eliminará todas las imágenes y volúmenes de Docker en tu sistema, no solo los relacionados con este proyecto.
+
 ## Solución de Problemas
 
 *   **Permisos de Docker:** Asegúrate de que tu usuario tiene permisos para ejecutar comandos de Docker. Generalmente, esto se logra añadiendo tu usuario al grupo `docker` (`sudo usermod -aG docker $USER` y luego reiniciando sesión o el sistema) o ejecutando los comandos de Docker con `sudo`.
