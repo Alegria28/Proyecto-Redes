@@ -59,24 +59,24 @@ iptables -A DOCKER-USER -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
 # En este caso, agregamos una regla (-A) a nuestra cadena para esta IP en especifico bloqueando (-j DROP) el protocolo tcp en el puerto 80 (HTTP),
 # agregando un comentario informativo sobre esta regla, la dirección IP de origen (-s), -p se refiere a protocolo y --dport se refiere a destination port
-iptables -A DOCKER-USER -s 192.168.1.77 -p tcp --dport 80 -j DROP -m comment --comment "Regla 1"
+iptables -A DOCKER-USER -s 172.16.156.208 -p tcp --dport 80 -j DROP -m comment --comment "Regla 1"
 
 # ------ 2. Denegar acceso al puerto 21 a un equipo en especifico ------
 
 # Volvemos a hacer lo mismo para la misma IP, pero ahora estaremos bloqueando el puerto 21 (FTP)
-iptables -A DOCKER-USER -s 192.168.1.77 -p tcp --dport 21 -j DROP -m comment --comment "Regla 2"
+iptables -A DOCKER-USER -s 172.16.156.208 -p tcp --dport 21 -j DROP -m comment --comment "Regla 2"
 
 # ------ 3. Denegar trafico de salida para un rango de direcciones ------
 
 # Utilizamos -m para cargar módulos de concordancia, específicamente el iprange el cual nos permite especificar un rango de direcciones IP (dentro de los contenedores) 
 # usando --src-range, -o especifica la interfaz de salida. En este caso solo bloqueamos el contenedor de apache para "conectarse hacia el exterior"
-iptables -A DOCKER-USER -m iprange --src-range 192.168.0.70-192.168.0.160 -o enp4s0 -j DROP -m comment --comment "Regla 3"
+iptables -A DOCKER-USER -m iprange --src-range 192.168.0.70-192.168.0.160 -o wlo1 -j DROP -m comment --comment "Regla 3"
 
 # ------ 5. Denegar acceso al puerto 25 (STMTP) para un equipo en especifico usando su MAC ------
 
 # Utilizamos el modulo mac para especificar la mac de origen que vamos a bloquear, ademas de también especificar que el puerto de destino que vamos a bloquear, 
 # que es el 1025 en el contenedor
-iptables -A DOCKER-USER -m mac --mac-source 40:1a:58:d5:45:7a -p tcp --dport 1025 -j DROP -m comment --comment "Regla 5"
+iptables -A DOCKER-USER -m mac --mac-source 28:d0:ea:0a:ff:dc -p tcp --dport 1025 -j DROP -m comment --comment "Regla 5"
 
 # ------ 6. Limitar numero de conexiones simultaneas a 20 ------
 
@@ -86,16 +86,16 @@ iptables -A DOCKER-USER -p tcp --syn -m connlimit --connlimit-above 20 --connlim
 
 # ------ 7. Denegar acceso al puerto 443 (HTTPS) para un equipo en especifico -----
 
-# Muy similar a la regla 3, pero para el puerto 443
-iptables -A DOCKER-USER -s 192.168.0.165 -o enp4s0 -p tcp --dport 443 -j DROP -m comment --comment "Regla 7"
+# Muy similar a la regla 3, pero para el puerto 443 (verificar puerto de salida)
+iptables -A DOCKER-USER -s 192.168.0.165 -o wlo1 -p tcp --dport 443 -j DROP -m comment --comment "Regla 7"
 
 # ------ 8. Denegar acceso al puerto 22 (SSH) para un equipo en especifico -----
 
 # Primero permitimos la IP del equipo que va a acceder a este puerto
-iptables -A DOCKER-USER -s 192.168.1.200 -p tcp --dport 2222 -j ACCEPT -m comment --comment "Regla 7.1: IP aceptada"
+iptables -A DOCKER-USER -s 172.16.156.210 -p tcp --dport 2222 -j ACCEPT -m comment --comment "Regla 8.1: IP aceptada"
 
 # Para el resto de trafico, se bloqueara (recordar que es el puerto de destino)
-iptables -A DOCKER-USER -p tcp --dport 2222 -j DROP -m comment --comment "Regla 7.2: Resto del trafico bloqueado"
+iptables -A DOCKER-USER -p tcp --dport 2222 -j DROP -m comment --comment "Regla 8.2: Resto del trafico bloqueado"
 
 # ------ Reglas propuestas ------ #
 

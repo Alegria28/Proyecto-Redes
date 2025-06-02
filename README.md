@@ -191,13 +191,13 @@ El script `ipTables/ipTablesConf.sh` se ejecuta automáticamente al levantar los
         *   **Resultado Esperado:** La conexión debería fallar.
 *   **Nota:** La interfaz de salida `-o enp4s0` en la regla es la interfaz de red del host.
 
-#### g. Regla 8 (7.1 & 7.2 en script): Permitir acceso al puerto 2222 (SSH) solo desde `192.168.1.200`
-*   **Nota:** Esta prueba asume que tienes un servicio SSH ejecutándose en un contenedor (en su puerto 22 interno) y mapeado al puerto 2222 del host. Necesitarás un nombre de usuario válido para el servidor SSH dentro del contenedor y, posiblemente, una contraseña o una clave SSH configurada. Reemplaza `usuario` con el nombre de usuario real.
+#### g. Regla 8: Permitir acceso al puerto 2222 (SSH) solo desde `192.168.1.200`
+*   **Nota:** Esta prueba asume que tienes un servicio SSH ejecutándose en un contenedor (en su puerto 22 interno) y mapeado al puerto 2222 del host. La contraseña es **testpassword**
 *   **Desde una máquina con IP `192.168.1.200`:**
-    Intenta conectar por SSH: `ssh usuario@<docker_host_ip> -p 2222`
+    Intenta conectar por SSH: `ssh testuser@<docker_host_ip> -p 2222`
     *   **Resultado Esperado:** Deberías ver el prompt de SSH o establecer una conexión (después de ingresar la contraseña si es necesaria).
 *   **Desde una máquina con IP diferente:**
-    Intenta conectar por SSH: `ssh usuario@<docker_host_ip> -p 2222`
+    Intenta conectar por SSH: `ssh testuser@<docker_host_ip> -p 2222`
     *   **Resultado Esperado:** La conexión debería fallar (timeout o rechazo por `iptables` antes de llegar al prompt de SSH).
 
 #### h. Regla 9: Denegar acceso al puerto 23 (Telnet)
